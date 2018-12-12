@@ -1,0 +1,202 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>RecordPoint.Messaging.Interfaces</name>
+    </assembly>
+    <members>
+        <member name="T:RecordPoint.Messaging.Interfaces.IMessageHandler">
+            <summary>
+            Interface for handling messages of a given type.
+            To handle messages, define classes that implement this
+            interface and register them in the IoC container used to initialize
+            the messaging implementation. Message Pumps will resolve the correct
+            handler from the container and call the HandleMessage method.
+            </summary>
+        </member>
+        <member name="M:RecordPoint.Messaging.Interfaces.IMessageHandler.HandleMessage(System.Object,RecordPoint.Messaging.Interfaces.IMessageProcessingContext)">
+            <summary>
+            Handles a message of a given type. 
+            HandleMessage may be called one or more times for each instance of a message
+            in the queue (i.e., at-least-once delivery). Therefore, message handling logic
+            should be idempotent.
+            </summary>
+            <param name="message">The message to handle.</param>
+            <param name="context">The context of the processing.</param>
+            <returns></returns>
+        </member>
+        <member name="T:RecordPoint.Messaging.Interfaces.IMessageHandlerFactory">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:RecordPoint.Messaging.Interfaces.IMessageHandlerFactory.CreateMessageHandler(System.Type)">
+            <summary>
+            Returns the handler for the messageType passed
+            </summary>
+            <param name="messageType"></param>
+            <returns></returns>
+        </member>
+        <member name="T:RecordPoint.Messaging.Interfaces.IMessageProcessingContext">
+            <summary>
+            An interface that represents the processing environment for a single message.
+            </summary>
+        </member>
+        <member name="M:RecordPoint.Messaging.Interfaces.IMessageProcessingContext.GetMessageId">
+            <summary>
+            If a message ID was provided by the sender, it can be accessed via this method.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:RecordPoint.Messaging.Interfaces.IMessageProcessingContext.DeadLetter(System.String)">
+            <summary>
+            Dead-letters the currently processing message. The message will be moved
+            out of the queue and to a separate dead-letter store where it can be inspected
+            and troubleshooted manually. After a message is dead-lettered it will not appear
+            in the queue any more.
+            
+            The underlying implementation of this method must include a retry policy to handle transient failures against the message queue. 
+            The calling code should not attempt to add additional retry logic when dead lettering.
+            </summary>
+            <param name="reason">An application-defined reason for dead-lettering the message. This will appear on the dead lettered message and can be used for troubleshooting.</param>
+            <returns></returns>
+        </member>
+        <member name="M:RecordPoint.Messaging.Interfaces.IMessageProcessingContext.Complete">
+            <summary>
+            Completes the currently processing message. The message will be deleted from the queue
+            and will not appear in the queue any more. Use this method when processing of a message
+            in a handler has completed successfully.
+            
+            The underlying implementation of this method must include a retry policy to handle transient failures against the message queue. 
+            The calling code should not attempt to add additional retry logic when completing.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:RecordPoint.Messaging.Interfaces.IMessageProcessingContext.Abandon">
+            <summary>
+            Abandons the currently processing message. The message will be returned to the queue 
+            and will be picked up by a message handler again in future.
+            
+            The underlying implementation of this method must include a retry policy to handle transient failures against the message queue. 
+            The calling code should not attempt to add additional retry logic when abandoning.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:RecordPoint.Messaging.Interfaces.IMessageProcessingContext.Defer(System.TimeSpan)">
+            <summary>
+            Defers the currently processing message. Returns the message back to the queue. The message will not be
+            received again until the tryAgainIn time span has elapsed. 
+            
+            The underlying implementation of this method must include a retry policy to handle transient failures against the message queue. 
+            The calling code should not attempt to add additional retry logic when deferring.
+            </summary>
+            <param name="tryAgainIn">The amount of time to elapse before the message will be picked up by a handler again.</param>
+            <returns></returns>
+        </member>
+        <member name="M:RecordPoint.Messaging.Interfaces.IMessageProcessingContext.CreateTransactionalSender(System.String)">
+            <summary>
+            Creates a message sender that sends messages in a transaction that is scoped to the current
+            message processing context.
+            Messages sent via this sender will not actually send unless the processing of the current
+            message completes successfully.
+            Note that for messsaging to be transactional, this must be used inside a handler whose class
+            is decorated with the Transactional attribute.
+            </summary>
+            <param name="destination"></param>
+            <returns></returns>
+        </member>
+        <member name="T:RecordPoint.Messaging.Interfaces.IMessagePump">
+            <summary>
+            Encapsulates a long-running process that pulls messages from an input queue 
+            and calls an appropriate handler. 
+            Message handlers are resolved from the IoC container used to initialize the 
+            Azure Service Bus messaging subsystem.
+            </summary>
+        </member>
+        <member name="M:RecordPoint.Messaging.Interfaces.IMessagePump.Start">
+            <summary>
+            Starts the message pump.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:RecordPoint.Messaging.Interfaces.IMessagePump.Stop">
+            <summary>
+            Stops the message pump.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:RecordPoint.Messaging.Interfaces.IMessageSender">
+            <summary>
+            Interface for sending messages.
+            All messages sent from an IMessageSender instance go to the same queue.
+            </summary>
+        </member>
+        <member name="M:RecordPoint.Messaging.Interfaces.IMessageSender.Send``1(``0,System.String,System.Nullable{System.DateTime})">
+            <summary>
+            Sends a message.
+            
+            The underlying implementation of this method may include a retry policy to handle transient failures against the message queue. 
+            The calling code should not attempt to add additional retry logic when sending.
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="message">The message payload.</param>
+            <param name="messageId">If specified, an ID that uniquely identifies the message. This may be used for deduplication in the message broker.</param>
+            <param name="scheduleAt">If specified, the DateTime that the message will become available for processing in the message broker.</param>
+            <returns></returns>
+        </member>
+        <member name="T:RecordPoint.Messaging.Interfaces.IMessagingDeploymentManager">
+            <summary>
+            Interface for managing deployment of messaging infrastructure.
+            </summary>
+        </member>
+        <member name="M:RecordPoint.Messaging.Interfaces.IMessagingDeploymentManager.Install">
+            <summary>
+            Installs messaging infrastructure.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:RecordPoint.Messaging.Interfaces.IMessagingDeploymentManager.Uninstall">
+            <summary>
+            Uninstalls messaging infrastructure.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:RecordPoint.Messaging.Interfaces.IMessagingDeploymentManager.IsEnabled">
+            <summary>
+            Determines if messaging infrastructure is enabled.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:RecordPoint.Messaging.Interfaces.IMessagingFactory">
+            <summary>
+            Interface for creating message senders and message pumps.
+            </summary>
+        </member>
+        <member name="M:RecordPoint.Messaging.Interfaces.IMessagingFactory.CreateMessageSender(System.String,RecordPoint.Messaging.Interfaces.IMessageProcessingContext)">
+            <summary>
+            Creates a message sender for a given destination.
+            </summary>
+            <param name="destination">The name of the queue to which messages will be sent.</param>
+            <param name="context">An optional IMessageProcessingContext, used for transactional sending.</param>
+            <returns></returns>
+        </member>
+        <member name="M:RecordPoint.Messaging.Interfaces.IMessagingFactory.CreateMessagePump(System.String)">
+            <summary>
+            Creates a message pump for a given input queue.
+            </summary>
+            <param name="inputQueue">The name of the queue from which messages will be pulled.</param>
+            <returns></returns>
+        </member>
+        <member name="P:RecordPoint.Messaging.Interfaces.IMessagingFactory.MessageHandlerFactory">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="T:RecordPoint.Messaging.Interfaces.TransactionalAttribute">
+            <summary>
+            Indicates that a message handler methods should be run in a messaging transaction.
+            When run in a messaging transaction, any messages sent from that handler will be
+            sent atomically with the completion of the current message.
+            </summary>
+        </member>
+    </members>
+</doc>
