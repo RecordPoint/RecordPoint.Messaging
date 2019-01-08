@@ -42,7 +42,7 @@ namespace RecordPoint.Messaging.AzureServiceBus
             }            
         }
 
-        public async Task Send<T>(T message, string messageId = null, DateTime? scheduleAt = null)
+        public async Task Send<T>(T message, string messageId = null, Guid? tenantId = null, DateTime? scheduleAt = null)
         {
             // serialize
             var serializedMessage = JsonConvert.SerializeObject(message);
@@ -98,6 +98,10 @@ namespace RecordPoint.Messaging.AzureServiceBus
                 brokerMessage.UserProperties.Add(Constants.HeaderKeys.RPContextId, _settings.ContextId);
             }
 
+            if (tenantId.HasValue)
+            {
+                brokerMessage.UserProperties.Add(Constants.HeaderKeys.RPTenantId, tenantId.Value);
+            }
             // send
             // Send exceptions are handled internally by the _messageSender with a retry policy.
             // exceptions that fail all stages of the retry policy will be thrown out.

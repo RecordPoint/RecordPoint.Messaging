@@ -15,6 +15,12 @@ namespace RecordPoint.Messaging.Interfaces
         string GetMessageId();
 
         /// <summary>
+        /// If a tenant ID was provided by the sender, it can be accessed via this method.
+        /// </summary>
+        /// <returns></returns>
+        string GetTenantId();
+
+        /// <summary>
         /// Dead-letters the currently processing message. The message will be moved
         /// out of the queue and to a separate dead-letter store where it can be inspected
         /// and troubleshooted manually. After a message is dead-lettered it will not appear

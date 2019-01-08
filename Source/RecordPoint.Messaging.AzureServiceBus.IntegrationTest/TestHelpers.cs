@@ -11,12 +11,27 @@ namespace RecordPoint.Messaging.AzureServiceBus.Test
 {
     public static class TestHelpers
     {
+        private const string EnvironmentVariable_ServiceBusConnectionString = "RP_M_SBCONNECTION";
+        private const string EnvironmentVariable_BlobConnectionString = "RP_M_BLOBCONNECTION";
+
         public static AzureServiceBusSettings GetSettings()
         {
+            var serviceBusConnectionString = Environment.GetEnvironmentVariable(EnvironmentVariable_ServiceBusConnectionString);
+            if (string.IsNullOrEmpty(serviceBusConnectionString))
+            {
+                throw new ApplicationException($"No Service Bus connection string found in environment variable {EnvironmentVariable_ServiceBusConnectionString}");
+            }
+
+            var blobConnectionString = Environment.GetEnvironmentVariable(EnvironmentVariable_BlobConnectionString);
+            if (string.IsNullOrEmpty(blobConnectionString))
+            {
+                throw new ApplicationException($"No Blob connection string found in environment variable {EnvironmentVariable_BlobConnectionString}");
+            }
+
             var settings = new AzureServiceBusSettings
             {
-                ServiceBusConnectionString = "",
-                BlobStorageConnectionString = "",
+                ServiceBusConnectionString = serviceBusConnectionString,
+                BlobStorageConnectionString = blobConnectionString,
                 BlobStorageContainerName = "messagebodies",
                 MaxDegreeOfParallelism = 8,
                 AutoComplete = false,

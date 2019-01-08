@@ -47,6 +47,12 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:RecordPoint.Messaging.Interfaces.IMessageProcessingContext.GetTenantId">
+            <summary>
+            If a tenant ID was provided by the sender, it can be accessed via this method.
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:RecordPoint.Messaging.Interfaces.IMessageProcessingContext.DeadLetter(System.String)">
             <summary>
             Dead-letters the currently processing message. The message will be moved
@@ -130,7 +136,7 @@
             All messages sent from an IMessageSender instance go to the same queue.
             </summary>
         </member>
-        <member name="M:RecordPoint.Messaging.Interfaces.IMessageSender.Send``1(``0,System.String,System.Nullable{System.DateTime})">
+        <member name="M:RecordPoint.Messaging.Interfaces.IMessageSender.Send``1(``0,System.String,System.Nullable{System.Guid},System.Nullable{System.DateTime})">
             <summary>
             Sends a message.
             
@@ -140,6 +146,7 @@
             <typeparam name="T"></typeparam>
             <param name="message">The message payload.</param>
             <param name="messageId">If specified, an ID that uniquely identifies the message. This may be used for deduplication in the message broker.</param>
+            <param name="tenantId">If specified, an ID that identifies which tenant the message belongs to.</param>
             <param name="scheduleAt">If specified, the DateTime that the message will become available for processing in the message broker.</param>
             <returns></returns>
         </member>
@@ -186,10 +193,30 @@
             <param name="inputQueue">The name of the queue from which messages will be pulled.</param>
             <returns></returns>
         </member>
+        <member name="M:RecordPoint.Messaging.Interfaces.IMessagingFactory.CreatePeekMessagePump(System.String)">
+            <summary>
+            Creates a message pump to peek for a given input queue.
+            </summary>
+            <param name="inputQueue">The name of the queue from which messages will be pulled.</param>
+            <returns></returns>
+        </member>
         <member name="P:RecordPoint.Messaging.Interfaces.IMessagingFactory.MessageHandlerFactory">
             <summary>
             
             </summary>
+        </member>
+        <member name="T:RecordPoint.Messaging.Interfaces.IPeekMessagePump">
+            <summary>
+            </summary>
+        </member>
+        <member name="M:RecordPoint.Messaging.Interfaces.IPeekMessagePump.PeekMessage(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Checks if message exists in the message queue with the given tenantId
+            Does NOT call any handlers.
+            </summary>
+            <param name="tenantId">ID to check in the messages</param>
+            <param name="ct"></param>
+            <returns></returns>
         </member>
         <member name="T:RecordPoint.Messaging.Interfaces.TransactionalAttribute">
             <summary>
