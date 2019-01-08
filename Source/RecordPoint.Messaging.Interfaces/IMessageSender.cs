@@ -18,8 +18,9 @@ namespace RecordPoint.Messaging.Interfaces
         /// <typeparam name="T"></typeparam>
         /// <param name="message">The message payload.</param>
         /// <param name="messageId">If specified, an ID that uniquely identifies the message. This may be used for deduplication in the message broker.</param>
+        /// <param name="tenantId">If specified, an ID that identifies which tenant the message belongs to.</param>
         /// <param name="scheduleAt">If specified, the DateTime that the message will become available for processing in the message broker.</param>
         /// <returns></returns>
-        Task Send<T>(T message, string messageId = null, DateTime? scheduleAt = null);
+        Task Send<T>(T message, string messageId = null, Guid? tenantId = null, DateTime? scheduleAt = null);
     }
 }

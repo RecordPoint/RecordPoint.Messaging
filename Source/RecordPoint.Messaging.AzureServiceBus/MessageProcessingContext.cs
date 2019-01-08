@@ -52,6 +52,11 @@ namespace RecordPoint.Messaging.AzureServiceBus
             return _message.MessageId;
         }
 
+        public string GetTenantId()
+        {
+            return _message.GetTenantId();
+        }
+
         public Task Abandon()
         {
             // Don't abandon right away - the message pump will abandon the message outside of the transaction.
@@ -139,9 +144,15 @@ namespace RecordPoint.Messaging.AzureServiceBus
             var controlMessage = new Message();
             controlMessage.UserProperties.Add(Constants.HeaderKeys.RPDeferredMessageSequenceNumber, _message.SystemProperties.SequenceNumber);
             controlMessage.UserProperties.Add(Constants.HeaderKeys.RPContextId, _settings.ContextId);
+            //Copy the tenant Id
+            if (_message.UserProperties.TryGetValue(Constants.HeaderKeys.RPTenantId, out var messageTenantId))
+            {
+                controlMessage.UserProperties.Add(Constants.HeaderKeys.RPTenantId, messageTenantId);
+            }
+
             controlMessage.ScheduledEnqueueTimeUtc = DateTime.UtcNow.Add(tryAgainIn);
             controlMessage.PartitionKey = _message.PartitionKey; // Ensure the control message goes to the same partition as the underlying message so transactions work
-            
+
             // We want to use a transaction if we're not already in a transaction scope
             var useTransaction = !_isTransactional;
 

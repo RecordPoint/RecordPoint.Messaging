@@ -26,6 +26,11 @@ namespace RecordPoint.Messaging.AzureServiceBus
             return new MessagePump(_settings, _messageHandlerFactory, _serviceBusConnection, this, inputQueue) as IMessagePump;
         }
 
+        public IPeekMessagePump CreatePeekMessagePump(string inputQueue)
+        {
+            return new PeekMessagePump(_settings, _messageHandlerFactory, _serviceBusConnection, this, inputQueue) as IPeekMessagePump;
+        }
+
         public IMessageSender CreateMessageSender(string destination, IMessageProcessingContext context = null)
         {
             return new MessageSender(_settings, _serviceBusConnection, context as MessageProcessingContext, destination) as IMessageSender;

@@ -17,6 +17,10 @@
             /// This is useful for automated tests that share a common broker that run in parallel.
             /// </summary>
             public const string RPContextId = nameof(RPContextId);
+            /// <summary>
+            /// The tenant Id for which the message belongs.
+            /// </summary>
+            public const string RPTenantId = nameof(RPTenantId);
 
             /// <summary>
             /// Only used when a message is deferred using IMessageProcessingContext.Defer.
