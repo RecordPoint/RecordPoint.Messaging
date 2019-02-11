@@ -2,6 +2,13 @@
 
   <PropertyGroup>
     <TargetFrameworks>net461;netstandard2.0</TargetFrameworks>
+    <PackageIconUrl>https://www.gravatar.com/avatar/df77d14f06c2069ab099dbb8d96c20f3.png?size=64</PackageIconUrl>
+    <PackageTags>RecordPoint</PackageTags>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://www.records365.com/</PackageProjectUrl>
+    <Description>An abstraction layer over messaging oriented middleware.</Description>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+    <PackageVersion>1.2.1</PackageVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">

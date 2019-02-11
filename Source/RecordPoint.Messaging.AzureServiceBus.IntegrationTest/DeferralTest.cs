@@ -120,7 +120,7 @@ namespace RecordPoint.Messaging.AzureServiceBus.Test
             }
 
             // Send a message to be deferred, then abandoned, then deadlettered or completed
-            await sender.Send(message);
+            await sender.Send(message).ConfigureAwait(false);
 
             await TestHelpers.PumpQueueUntil(factory, queueName, async () =>
             {
@@ -136,7 +136,7 @@ namespace RecordPoint.Messaging.AzureServiceBus.Test
                     expectedDeadLetteredItems = timesToDefer > 0 ? 2 : 1;
                 }
                 var deadLetterQueue = EntityNameHelper.FormatDeadLetterPath(queueName);
-                var deadLetteredItems = await TestHelpers.GetAllRawMessagesByContextId(settings, deadLetterQueue);
+                var deadLetteredItems = await TestHelpers.GetAllRawMessagesByContextId(settings, deadLetterQueue).ConfigureAwait(false);
                 return expectedDeadLetteredItems == deadLetteredItems.Count;
             }).ConfigureAwait(false);
             

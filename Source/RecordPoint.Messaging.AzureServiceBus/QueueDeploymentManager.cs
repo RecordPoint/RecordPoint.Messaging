@@ -1,5 +1,8 @@
 ﻿using Microsoft.Azure.ServiceBus;
 using Microsoft.Azure.ServiceBus.Management;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
+using RecordPoint.Messaging.AzureServiceBus.Extensions;
 using RecordPoint.Messaging.Interfaces;
 using System.Threading.Tasks;
 
@@ -7,13 +10,15 @@ namespace RecordPoint.Messaging.AzureServiceBus
 {
     public class QueueDeploymentManager : IMessagingDeploymentManager
     {
+        private AzureServiceBusSettings _settings;
         private ManagementClient _client;
         private QueueDescription _queueDescription;
 
-        public QueueDeploymentManager(string serviceBusConnection, QueueDescription queueDescription)
+        public QueueDeploymentManager(AzureServiceBusSettings settings, QueueDescription queueDescription)
         {
+            _settings = settings;
             //Partitioning, TTL, lock duration, delivery count, etc
-            _client = new ManagementClient(serviceBusConnection);
+            _client = new ManagementClient(_settings.ServiceBusConnectionString);
             _queueDescription = queueDescription;
         }
 
@@ -31,6 +36,11 @@ namespace RecordPoint.Messaging.AzureServiceBus
 
         public async Task<bool> Install()
         {
+            if (_settings.TryGetContainer(out var container))
+            {
+                await container.CreateIfNotExistsAsync().ConfigureAwait(false);
+            }
+
             var queue = await GetQueueAsync().ConfigureAwait(false);
             if(queue == null)
             {
@@ -44,6 +54,7 @@ namespace RecordPoint.Messaging.AzureServiceBus
                     return false;
                 }
             }
+
             return false;
         }
 
@@ -54,17 +65,24 @@ namespace RecordPoint.Messaging.AzureServiceBus
             {
                 return queue.Status == EntityStatus.Active;
             }
+
             return false;
         }
 
         public async Task<bool> Uninstall()
         {
+            if (_settings.TryGetContainer(out var container))
+            {
+                await container.DeleteIfExistsAsync().ConfigureAwait(false);
+            }
+
             var queue = await GetQueueAsync().ConfigureAwait(false);
             if (queue != null)
             {
                 await _client.DeleteQueueAsync(_queueDescription.Path).ConfigureAwait(false);
                 return true;
             }
+
             return false;
         }
     }

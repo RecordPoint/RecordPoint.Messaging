@@ -1,20 +1,10 @@
-﻿using System;
-
-namespace RecordPoint.Messaging.Interfaces
+﻿namespace RecordPoint.Messaging.Interfaces
 {
     /// <summary>
     /// Interface for creating message senders and message pumps.
     /// </summary>
-    public interface IMessagingFactory
+    public interface IMessagingFactory : IMessageSenderFactory
     {
-        /// <summary>
-        /// Creates a message sender for a given destination.
-        /// </summary>
-        /// <param name="destination">The name of the queue to which messages will be sent.</param>
-        /// <param name="context">An optional IMessageProcessingContext, used for transactional sending.</param>
-        /// <returns></returns>
-        IMessageSender CreateMessageSender(string destination, IMessageProcessingContext context = null);
-
         /// <summary>
         /// Creates a message pump for a given input queue.
         /// </summary>
@@ -30,7 +20,7 @@ namespace RecordPoint.Messaging.Interfaces
         IPeekMessagePump CreatePeekMessagePump(string inputQueue);
 
         /// <summary>
-        /// 
+        /// Gets an IMessageHandlerFactory.
         /// </summary>
         IMessageHandlerFactory MessageHandlerFactory { get; }
     }

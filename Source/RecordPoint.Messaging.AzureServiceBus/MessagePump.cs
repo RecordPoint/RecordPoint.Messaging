@@ -1,10 +1,12 @@
 ﻿using Microsoft.Azure.ServiceBus;
 using Microsoft.Azure.ServiceBus.Core;
+using Microsoft.Azure.ServiceBus.Management;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
 using RecordPoint.Messaging.Interfaces;
 using System;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,6 +20,9 @@ namespace RecordPoint.Messaging.AzureServiceBus
         private MessageReceiver _messageReceiver;
         private IMessageHandlerFactory _messageHandlerFactory;
         private MessagingFactory _messagingFactory;
+        private ServiceBusConnection _serviceBusConnection;
+        private string _inputQueue;
+        private QueueDescription _queueDescription;
 
         public MessagePump(AzureServiceBusSettings settings,
             IMessageHandlerFactory messageHandlerFactory,
@@ -28,6 +33,8 @@ namespace RecordPoint.Messaging.AzureServiceBus
             _settings = settings;
             _messageHandlerFactory = messageHandlerFactory;
             _messagingFactory = messagingFactory;
+            _serviceBusConnection = connection;
+            _inputQueue = inputQueue;
 
             // The RetryPolicy.Default supplied to the receiver uses an exponential backoff 
             // for transient failures. 
@@ -35,8 +42,11 @@ namespace RecordPoint.Messaging.AzureServiceBus
                 ReceiveMode.PeekLock, RetryPolicy.Default);
         }
 
-        public Task Start()
+        public async Task Start()
         {
+            var managementClient = new ManagementClient(_settings.ServiceBusConnectionString);
+            _queueDescription = await managementClient.GetQueueAsync(_inputQueue).ConfigureAwait(false);
+            
             _messageReceiver.PrefetchCount = _settings.PrefetchCount;
             _messageReceiver.RegisterMessageHandler(MessageHandler,
                new MessageHandlerOptions(ExceptionHandler)
@@ -44,8 +54,6 @@ namespace RecordPoint.Messaging.AzureServiceBus
                    AutoComplete = _settings.AutoComplete,
                    MaxConcurrentCalls = _settings.MaxDegreeOfParallelism
                });
-
-            return Task.CompletedTask;
         }
 
         public async Task Stop()
@@ -94,6 +102,21 @@ namespace RecordPoint.Messaging.AzureServiceBus
             await InnerMessageHandler(message, null, ct).ConfigureAwait(false);
         }
 
+        internal static void GetDeadLetterFields(Exception ex, out string deadLetterReason, out string deadLetterDescription)
+        {
+            if (ex is AggregateException agex)
+            {
+                ex = agex.Flatten().InnerException;
+            }
+
+            deadLetterReason = ex.GetType().FullName + ": " + ex.Message;
+            deadLetterDescription = ex.ToString();
+
+            // Restrict the length of these fields to 1024 chars.
+            deadLetterReason = deadLetterReason.Substring(0, Math.Min(deadLetterReason.Length, 1024));
+            deadLetterDescription = deadLetterDescription.Substring(0, Math.Min(deadLetterDescription.Length, 1024));
+        }
+
         private async Task InnerMessageHandler(Message message, Message controlMessage, CancellationToken ct)
         {
             byte[] messageBody = null;
@@ -118,13 +141,14 @@ namespace RecordPoint.Messaging.AzureServiceBus
                 object deserializedMessage;
                 try
                 {
-                    var messageString = Encoding.Default.GetString(messageBody);
+                    var messageString = Encoding.UTF8.GetString(messageBody);
                     deserializedMessage = JsonConvert.DeserializeObject(messageString, type);
                 }
                 catch (Exception ex)
                 {
                     await _messageReceiver.DeadLetterAsync(message.SystemProperties.LockToken,
-                        $"Error deserializing message body: {ex}");
+                        $"Error deserializing message body: {ex}")
+                        .ConfigureAwait(false);
                     return;
                 }
 
@@ -141,8 +165,29 @@ namespace RecordPoint.Messaging.AzureServiceBus
 
                 using (var tx = useTransaction ? new TransactionScope(TransactionScopeAsyncFlowOption.Enabled) : null)
                 {
-                    await handler.HandleMessage(deserializedMessage, context).ConfigureAwait(false);
-                    
+                    try
+                    {
+                        await handler.HandleMessage(deserializedMessage, context).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        // If an exception was thrown on the last attempt, explicitly dead-letter the message.
+                        // If we don't do this, ASB will dead letter the message with a DeadLetterReason field 
+                        // value of MaxDeliveryCountExceeded, which is not particularly useful for diagnosis. 
+                        // Instead, we explicitly dead-letter the message with some details of the exception that
+                        // was thrown. 
+                        if (message.SystemProperties.DeliveryCount == _queueDescription.MaxDeliveryCount)
+                        {
+                            var deadLetterReason = "";
+                            var deadLetterDescription = "";
+                            GetDeadLetterFields(ex, out deadLetterReason, out deadLetterDescription);
+
+                            await context.DeadLetter(deadLetterReason, deadLetterDescription).ConfigureAwait(false);
+                        }
+
+                        throw;
+                    }
+
                     if (!context.IsAbandoned)
                     {
                         tx?.Complete();
@@ -161,7 +206,8 @@ namespace RecordPoint.Messaging.AzureServiceBus
             else
             {
                 await _messageReceiver.DeadLetterAsync(message.SystemProperties.LockToken,
-                    $"Message has no type specified in the {Constants.HeaderKeys.RPMessageType} header, cannot deserialize message.");
+                    $"Message has no type specified in the {Constants.HeaderKeys.RPMessageType} header, cannot deserialize message.")
+                    .ConfigureAwait(false);
                 return;
             }
         }

@@ -30,8 +30,9 @@ namespace RecordPoint.Messaging.Interfaces
         /// The calling code should not attempt to add additional retry logic when dead lettering.
         /// </summary>
         /// <param name="reason">An application-defined reason for dead-lettering the message. This will appear on the dead lettered message and can be used for troubleshooting.</param>
+        /// <param name="description">An application-defined description for dead-lettering the message. This will appear on the dead lettered message and can be used for troubleshooting.</param>
         /// <returns></returns>
-        Task DeadLetter(string reason);
+        Task DeadLetter(string reason, string description = null);
 
         /// <summary>
         /// Completes the currently processing message. The message will be deleted from the queue
