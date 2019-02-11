@@ -51,8 +51,16 @@ namespace RecordPoint.Messaging.AzureServiceBus.Test
                 return messageHandlerFactory;
             }, new PerContainerLifetime());
             result.Register<IMessagingFactory, MessagingFactory>(new PerContainerLifetime());
-            result.Register<RecordPoint.Messaging.Interfaces.IMessageSender, MessageSender>(new PerContainerLifetime());
             result.Register<IMessagePump, MessagePump>(new PerContainerLifetime());
+            return result;
+        }
+
+        public static IServiceContainer GetSendOnlyContainer(AzureServiceBusSettings settings)
+        {
+            var result = new ServiceContainer();
+            result.Register<IServiceContainer>(x => result, new PerContainerLifetime());
+            result.Register<AzureServiceBusSettings>(x => settings, new PerContainerLifetime());
+            result.Register<IMessageSenderFactory, MessageSenderFactory>(new PerContainerLifetime());
             return result;
         }
 
@@ -68,7 +76,7 @@ namespace RecordPoint.Messaging.AzureServiceBus.Test
 
         public static async Task PumpQueueUntil(IMessagingFactory factory, string queue, Func<Task<bool>> completionCondition)
         {
-            await AwaitWithTimeout(InnerPumpQueueUntil(factory, queue, completionCondition), 60);
+            await AwaitWithTimeout(InnerPumpQueueUntil(factory, queue, completionCondition), 60).ConfigureAwait(false);
         }
 
         public static async Task PumpQueueUntil(IMessagingFactory factory, string queue, Func<bool> completionCondition)
@@ -129,7 +137,7 @@ namespace RecordPoint.Messaging.AzureServiceBus.Test
 
         public static async Task CheckRawMessagesByContextIdUntil(AzureServiceBusSettings settings, string queue, Func<IList<Message>, bool> completionCondition)
         {
-            await AwaitWithTimeout(InnerCheckRawMessagesByContextIdUntil(settings, queue, completionCondition), 120);
+            await AwaitWithTimeout(InnerCheckRawMessagesByContextIdUntil(settings, queue, completionCondition), 120).ConfigureAwait(false);
         }
 
         private static async Task InnerCheckRawMessagesByContextIdUntil(AzureServiceBusSettings settings, string queue, Func<IList<Message>, bool> completionCondition)
@@ -143,7 +151,7 @@ namespace RecordPoint.Messaging.AzureServiceBus.Test
                 }
                 else
                 {
-                    await Task.Delay(1000);
+                    await Task.Delay(1000).ConfigureAwait(false);
                 }
             }
         }

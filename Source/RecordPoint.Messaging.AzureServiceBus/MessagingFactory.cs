@@ -1,19 +1,15 @@
-﻿using Microsoft.Azure.ServiceBus;
-using RecordPoint.Messaging.Interfaces;
+﻿using RecordPoint.Messaging.Interfaces;
 
 namespace RecordPoint.Messaging.AzureServiceBus
 {
-    public class MessagingFactory : IMessagingFactory
+    public class MessagingFactory : MessageSenderFactory, IMessagingFactory
     {
-        private AzureServiceBusSettings _settings;
-        private IMessageHandlerFactory _messageHandlerFactory;
-        private ServiceBusConnection _serviceBusConnection;
+        private readonly IMessageHandlerFactory _messageHandlerFactory;
 
         public MessagingFactory(AzureServiceBusSettings settings, IMessageHandlerFactory messageHandlerFactory)
+            : base(settings)
         {
-            _settings = settings;
             _messageHandlerFactory = messageHandlerFactory;
-            _serviceBusConnection = new ServiceBusConnection(_settings.ServiceBusConnectionString);
         }
 
         public IMessageHandlerFactory MessageHandlerFactory
@@ -23,17 +19,12 @@ namespace RecordPoint.Messaging.AzureServiceBus
 
         public IMessagePump CreateMessagePump(string inputQueue)
         {
-            return new MessagePump(_settings, _messageHandlerFactory, _serviceBusConnection, this, inputQueue) as IMessagePump;
+            return new MessagePump(Settings, _messageHandlerFactory, ServiceBusConnection, this, inputQueue) as IMessagePump;
         }
 
         public IPeekMessagePump CreatePeekMessagePump(string inputQueue)
         {
-            return new PeekMessagePump(_settings, _messageHandlerFactory, _serviceBusConnection, this, inputQueue) as IPeekMessagePump;
-        }
-
-        public IMessageSender CreateMessageSender(string destination, IMessageProcessingContext context = null)
-        {
-            return new MessageSender(_settings, _serviceBusConnection, context as MessageProcessingContext, destination) as IMessageSender;
+            return new PeekMessagePump(Settings, _messageHandlerFactory, ServiceBusConnection, this, inputQueue) as IPeekMessagePump;
         }
     }
 }

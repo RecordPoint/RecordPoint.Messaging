@@ -25,9 +25,9 @@ namespace RecordPoint.Messaging.AzureServiceBus
         public string BlobStorageContainerName { get; set; }
 
         /// <summary>
-        /// The maximum message size for the Azure Service Bus namespace. 256 kb for basic and standard
-        /// and 1024 kb for premium.
+        /// The max message size is now determined from the broker, this property is ignored.
         /// </summary>
+        [Obsolete("The max message size is now determined from the message broker, this property is ignored.")]
         public int MaxMessageSizeKb { get; set; } = 256;
 
         /// <summary>

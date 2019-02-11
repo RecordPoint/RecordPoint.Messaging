@@ -1,7 +1,9 @@
 ﻿using Microsoft.Azure.ServiceBus;
+using Microsoft.Azure.ServiceBus.Management;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
+using RecordPoint.Messaging.AzureServiceBus.Extensions;
 using RecordPoint.Messaging.Interfaces;
 using System;
 using System.Text;
@@ -14,15 +16,18 @@ namespace RecordPoint.Messaging.AzureServiceBus
         private readonly AzureServiceBusSettings _settings;
         private readonly Microsoft.Azure.ServiceBus.Core.MessageSender _messageSender;
         private MessageProcessingContext _messageProcessingContext;
+        private NamespaceInfo _namespaceInfo;
 
         public MessageSender(AzureServiceBusSettings serviceBusSettings, 
             ServiceBusConnection serviceBusConnection,
+            NamespaceInfo namespaceInfo,
             MessageProcessingContext context,
             string destinationQueue)
         {
             _messageProcessingContext = context;
             _settings = serviceBusSettings;
-            
+            _namespaceInfo = namespaceInfo;
+
             // The default retry policy passed in to the sender provides an exponential backoff for transient failures. 
             if (context == null)
             {
@@ -46,7 +51,7 @@ namespace RecordPoint.Messaging.AzureServiceBus
         {
             // serialize
             var serializedMessage = JsonConvert.SerializeObject(message);
-            var messageBytes = Encoding.Default.GetBytes(serializedMessage);
+            var messageBytes = Encoding.UTF8.GetBytes(serializedMessage);
 
             var effectiveMessageId = messageId;
             if (string.IsNullOrEmpty(effectiveMessageId))
@@ -58,7 +63,9 @@ namespace RecordPoint.Messaging.AzureServiceBus
             // Check the length of the serialized message body, if it is too long, upload it 
             // to blob storage. Subtract 64kb from the max size to allow room for the message header,
             // which is also included in the message size. 
-            if (messageBytes.Length > (_settings.MaxMessageSizeKb - 64) * 1024)
+            var skuMaxMessageSizeKb = _namespaceInfo.MessagingSku == MessagingSku.Premium ? 1024 : 256;
+
+            if (messageBytes.Length > (skuMaxMessageSizeKb - 64) * 1024)
             {
                 messageUri = await UploadMessageBodyToBlob(effectiveMessageId, messageBytes).ConfigureAwait(false);
             }
@@ -110,12 +117,12 @@ namespace RecordPoint.Messaging.AzureServiceBus
 
         private async Task<string> UploadMessageBodyToBlob(string messageId, byte[] bytes)
         {
-            if (CloudStorageAccount.TryParse(_settings.BlobStorageConnectionString, out var storageAccount))
+            if (_settings.TryGetContainer(out var container))
             {
-                var cloudBlobClient = storageAccount.CreateCloudBlobClient();
-                var container = cloudBlobClient.GetContainerReference(_settings.BlobStorageContainerName);
                 var blob = container.GetBlockBlobReference(messageId);
+
                 await blob.UploadFromByteArrayAsync(bytes, 0, bytes.Length).ConfigureAwait(false);
+
                 return blob.Uri.ToString();
             }
             else

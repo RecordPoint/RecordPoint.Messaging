@@ -13,7 +13,7 @@ namespace RecordPoint.Messaging.AzureServiceBus.Test
         public async Task QueueInstallUninstallTest()
         {
             var newQueue = new Microsoft.Azure.ServiceBus.Management.QueueDescription("alex-queue-test") { MaxSizeInMB = 1024 };
-            var queueManager = new QueueDeploymentManager(TestHelpers.GetSettings().ServiceBusConnectionString, newQueue);
+            var queueManager = new QueueDeploymentManager(TestHelpers.GetSettings(), newQueue);
             var installed = await queueManager.Install();
             Assert.AreEqual(true, installed);
             var installedAgain = await queueManager.Install();

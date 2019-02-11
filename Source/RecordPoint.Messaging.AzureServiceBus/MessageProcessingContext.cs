@@ -101,15 +101,15 @@ namespace RecordPoint.Messaging.AzureServiceBus
             }
         }
 
-        public async Task DeadLetter(string reason)
+        public async Task DeadLetter(string reason, string description = null)
         {
             using (var tx = UseTransaction() ? new TransactionScope(TransactionScopeAsyncFlowOption.Enabled) : null)
             {
                 if (_deferralControlMessage != null)
                 {
-                    await _messageReceiver.DeadLetterAsync(_deferralControlMessage.SystemProperties.LockToken, reason).ConfigureAwait(false);
+                    await _messageReceiver.DeadLetterAsync(_deferralControlMessage.SystemProperties.LockToken, reason, description).ConfigureAwait(false);
                 }
-                await _messageReceiver.DeadLetterAsync(_message.SystemProperties.LockToken, reason).ConfigureAwait(false);
+                await _messageReceiver.DeadLetterAsync(_message.SystemProperties.LockToken, reason, description).ConfigureAwait(false);
 
                 tx?.Complete();
             }

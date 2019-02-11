@@ -53,7 +53,7 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:RecordPoint.Messaging.Interfaces.IMessageProcessingContext.DeadLetter(System.String)">
+        <member name="M:RecordPoint.Messaging.Interfaces.IMessageProcessingContext.DeadLetter(System.String,System.String)">
             <summary>
             Dead-letters the currently processing message. The message will be moved
             out of the queue and to a separate dead-letter store where it can be inspected
@@ -64,6 +64,7 @@
             The calling code should not attempt to add additional retry logic when dead lettering.
             </summary>
             <param name="reason">An application-defined reason for dead-lettering the message. This will appear on the dead lettered message and can be used for troubleshooting.</param>
+            <param name="description">An application-defined description for dead-lettering the message. This will appear on the dead lettered message and can be used for troubleshooting.</param>
             <returns></returns>
         </member>
         <member name="M:RecordPoint.Messaging.Interfaces.IMessageProcessingContext.Complete">
@@ -150,6 +151,19 @@
             <param name="scheduleAt">If specified, the DateTime that the message will become available for processing in the message broker.</param>
             <returns></returns>
         </member>
+        <member name="T:RecordPoint.Messaging.Interfaces.IMessageSenderFactory">
+            <summary>
+            Interface for creating message senders.
+            </summary>
+        </member>
+        <member name="M:RecordPoint.Messaging.Interfaces.IMessageSenderFactory.CreateMessageSender(System.String,RecordPoint.Messaging.Interfaces.IMessageProcessingContext)">
+            <summary>
+            Creates a message sender for a given destination.
+            </summary>
+            <param name="destination">The name of the queue to which messages will be sent.</param>
+            <param name="context">An optional IMessageProcessingContext, used for transactional sending.</param>
+            <returns></returns>
+        </member>
         <member name="T:RecordPoint.Messaging.Interfaces.IMessagingDeploymentManager">
             <summary>
             Interface for managing deployment of messaging infrastructure.
@@ -178,14 +192,6 @@
             Interface for creating message senders and message pumps.
             </summary>
         </member>
-        <member name="M:RecordPoint.Messaging.Interfaces.IMessagingFactory.CreateMessageSender(System.String,RecordPoint.Messaging.Interfaces.IMessageProcessingContext)">
-            <summary>
-            Creates a message sender for a given destination.
-            </summary>
-            <param name="destination">The name of the queue to which messages will be sent.</param>
-            <param name="context">An optional IMessageProcessingContext, used for transactional sending.</param>
-            <returns></returns>
-        </member>
         <member name="M:RecordPoint.Messaging.Interfaces.IMessagingFactory.CreateMessagePump(System.String)">
             <summary>
             Creates a message pump for a given input queue.
@@ -202,7 +208,7 @@
         </member>
         <member name="P:RecordPoint.Messaging.Interfaces.IMessagingFactory.MessageHandlerFactory">
             <summary>
-            
+            Gets an IMessageHandlerFactory.
             </summary>
         </member>
         <member name="T:RecordPoint.Messaging.Interfaces.IPeekMessagePump">

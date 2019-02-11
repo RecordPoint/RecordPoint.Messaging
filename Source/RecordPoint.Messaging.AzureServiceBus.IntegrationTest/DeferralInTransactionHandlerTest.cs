@@ -22,23 +22,23 @@ namespace RecordPoint.Messaging.AzureServiceBus.Test
             var ddeferralTestMessage = (DeferralTestMessage)message;
             if (Calls.Count <= ddeferralTestMessage.NumberOfTimesToDefer)
             {
-                await context.Defer(TimeSpan.FromSeconds(3));
+                await context.Defer(TimeSpan.FromSeconds(3)).ConfigureAwait(false);
             }
             else if (Calls.Count - ddeferralTestMessage.NumberOfTimesToDefer <= ddeferralTestMessage.NumberOfTimesToAbandon)
             {
-                await context.Abandon();
+                await context.Abandon().ConfigureAwait(false);
             }
             else
             {
                 if (ddeferralTestMessage.Complete)
                 {
-                    await context.Complete();
+                    await context.Complete().ConfigureAwait(false);
                 }
                 else
                 {
                     if (!_hasDeadLettered)
                     {
-                        await context.DeadLetter("Deadlettering this message");
+                        await context.DeadLetter("Deadlettering this message").ConfigureAwait(false);
                         _hasDeadLettered = true;
                     }
                 }
@@ -103,7 +103,7 @@ namespace RecordPoint.Messaging.AzureServiceBus.Test
             }
 
             // Send a message to be deferred, then abandoned, then deadlettered or completed
-            await sender.Send(message);
+            await sender.Send(message).ConfigureAwait(false);
 
             await TestHelpers.PumpQueueUntil(factory, queueName, async () =>
             {
@@ -119,7 +119,7 @@ namespace RecordPoint.Messaging.AzureServiceBus.Test
                     expectedDeadLetteredItems = timesToDefer > 0 ? 2 : 1;
                 }
                 var deadLetterQueue = EntityNameHelper.FormatDeadLetterPath(queueName);
-                var deadLetteredItems = await TestHelpers.GetAllRawMessagesByContextId(settings, deadLetterQueue);
+                var deadLetteredItems = await TestHelpers.GetAllRawMessagesByContextId(settings, deadLetterQueue).ConfigureAwait(false);
                 return expectedDeadLetteredItems == deadLetteredItems.Count;
             }).ConfigureAwait(false);
         }
